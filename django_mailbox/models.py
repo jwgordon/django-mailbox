@@ -127,7 +127,7 @@ class Mailbox(models.Model):
         verbose_name_plural = _('Mailboxes')
 
     def __str__(self):
-        return self.name + " j"
+        return self.name
 
     @property
     def _protocol_info(self):
@@ -806,7 +806,7 @@ class Message(models.Model):
         return super().delete(*args, **kwargs)
 
     def __str__(self):
-        return self.subject + "j"
+        return self.subject
 
     class Meta:
         verbose_name = _('E-mail message')
