@@ -1,8 +1,6 @@
 import imaplib
 import logging
 
-from datetime import datetime, timedelta
-
 from django.conf import settings
 
 from .base import EmailTransport, MessageParseError
@@ -14,7 +12,7 @@ logger = logging.getLogger(__name__)
 class ImapTransport(EmailTransport):
     def __init__(
         self, hostname, port=None, ssl=False, tls=False,
-        archive='', folder=None, pull_days=1,
+        archive='', folder=None,
     ):
         self.max_message_size = getattr(
             settings,
@@ -31,7 +29,6 @@ class ImapTransport(EmailTransport):
         self.archive = archive
         self.folder = folder
         self.tls = tls
-        self.pull_days = pull_days
         if ssl:
             self.transport = imaplib.IMAP4_SSL
             if not self.port:
@@ -62,9 +59,10 @@ class ImapTransport(EmailTransport):
 
     def _get_all_message_ids(self):
         # Fetch all the message uids
-        since_date = (datetime.now() - timedelta(days=self.pull_days)).strftime("%d-%b-%Y")
-        response, message_ids = self.server.uid('search', None, 'SINCE', since_date)
+        response, message_ids = self.server.uid('search', None, 'ALL')
         message_id_string = message_ids[0].strip()
+        print("JAKEJAKEJAKE")
+        print(message_id_string)
         # Usually `message_id_string` will be a list of space-separated
         # ids; we must make sure that it isn't an empty string before
         # splitting into individual UIDs.
@@ -117,6 +115,8 @@ class ImapTransport(EmailTransport):
         for uid in message_ids:
             try:
                 typ, msg_contents = self.server.uid('fetch', uid, '(RFC822)')
+                print(msg_contents)
+                print("SUKISUKISUKISUKISUKKIUSKISUKISUKISUKISUKISUKKIUSKI")
                 if not msg_contents:
                     continue
                 try:
@@ -137,6 +137,6 @@ class ImapTransport(EmailTransport):
             if self.archive:
                 self.server.uid('copy', uid, self.archive)
 
-            # self.server.uid('store', uid, "+FLAGS", "(\\Deleted)")
-        # self.server.expunge()
+            self.server.uid('store', uid, "+FLAGS", "(\\Deleted)")
+        self.server.expunge()
         return
