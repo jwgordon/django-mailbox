@@ -417,7 +417,10 @@ class Mailbox(models.Model):
                 utils.convert_header_to_unicode(message['subject'])[0:255]
             )
         if 'message-id' in message:
-            msg.message_id = message['message-id'][0:255].strip()
+            message_id = message['message-id'][0:255].strip()
+            if Message.objects.filter(message_id=message_id).exists():
+                print(f"Message already exists, skipping: {message_id}")
+            msg.message_id = message_id
         if 'from' in message:
             msg.from_header = utils.convert_header_to_unicode(message['from'])
         if 'to' in message:

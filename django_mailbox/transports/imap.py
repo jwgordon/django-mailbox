@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class ImapTransport(EmailTransport):
     def __init__(
         self, hostname, port=None, ssl=False, tls=False,
-        archive='', folder=None, pull_hours=1,
+        archive='', folder=None, pull_days=1,
     ):
         self.max_message_size = getattr(
             settings,
@@ -31,7 +31,7 @@ class ImapTransport(EmailTransport):
         self.archive = archive
         self.folder = folder
         self.tls = tls
-        self.pull_hours = pull_hours
+        self.pull_days = pull_days
         if ssl:
             self.transport = imaplib.IMAP4_SSL
             if not self.port:
@@ -62,7 +62,7 @@ class ImapTransport(EmailTransport):
 
     def _get_all_message_ids(self):
         # Fetch all the message uids
-        since_date = (datetime.now() - timedelta(hours=self.pull_hours)).strftime("%d-%b-%Y %H:%M:%S")
+        since_date = (datetime.now() - timedelta(days=self.pull_days)).strftime("%d-%b-%Y")
         print(f"SINCE: {since_date}")
         response, message_ids = self.server.uid('search', None, 'SINCE', since_date)
         message_id_string = message_ids[0].strip()
