@@ -61,6 +61,8 @@ class ImapTransport(EmailTransport):
         # Fetch all the message uids
         response, message_ids = self.server.uid('search', None, 'ALL')
         message_id_string = message_ids[0].strip()
+        print("JAKEJAKEJAKE")
+        print(message_id_string)
         # Usually `message_id_string` will be a list of space-separated
         # ids; we must make sure that it isn't an empty string before
         # splitting into individual UIDs.
@@ -113,6 +115,8 @@ class ImapTransport(EmailTransport):
         for uid in message_ids:
             try:
                 typ, msg_contents = self.server.uid('fetch', uid, '(RFC822)')
+                print(msg_contents)
+                print("SUKISUKISUKISUKISUKKIUSKISUKISUKISUKISUKISUKKIUSKI")
                 if not msg_contents:
                     continue
                 try:
