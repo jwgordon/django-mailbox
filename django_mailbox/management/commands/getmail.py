@@ -10,9 +10,10 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            'pull_days',
+            '--pull_days',
             nargs='?',
-            help="The name of the mailbox that will receive the message"
+            type=int,
+            help="The number of days to pull messages from"
         )
 
     def handle(self, pull_days=None, *args, **options):
