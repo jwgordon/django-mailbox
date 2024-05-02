@@ -418,8 +418,6 @@ class Mailbox(models.Model):
             )
         if 'message-id' in message:
             message_id = message['message-id'][0:255].strip()
-            if Message.objects.filter(message_id=message_id).exists():
-                print(f"OK Message already exists, skipping: {message_id}")
             msg.message_id = message_id
         if 'from' in message:
             msg.from_header = utils.convert_header_to_unicode(message['from'])
@@ -473,6 +471,7 @@ class Mailbox(models.Model):
         connection = self.get_connection()
         if not connection:
             return
+        current_highest_uid = self.messages.aggregate.aggregate(Max('uid'))['uid__max']
         try:
             for message in connection.get_message(condition):
                 msg = self.process_incoming_message(message)
@@ -542,6 +541,11 @@ class Message(models.Model):
     )
 
     message_id = models.CharField(
+        _('Message ID'),
+        max_length=255
+    )
+
+    imap_uid = models.CharField(
         _('Message ID'),
         max_length=255
     )
