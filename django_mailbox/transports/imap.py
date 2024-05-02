@@ -65,6 +65,7 @@ class ImapTransport(EmailTransport):
         if last_known_uid:
             response, message_ids = self.server.uid('search', None, 'UID',  f'{last_known_uid}:*')
         elif pull_days:
+            since_date = (datetime.now() - timedelta(days=self.pull_days)).strftime("%d-%b-%Y")
             response, message_ids = self.server.uid('search', None, 'SINCE', since_date)
         else:
             raise Exception("Need to have a latest message or else specify days")
