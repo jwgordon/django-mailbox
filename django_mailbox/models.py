@@ -279,6 +279,7 @@ class Mailbox(models.Model):
             raise Exception("No UID provided for message")
         if Message.objects.filter(mailbox=self, imap_uid=uid).exists():
             print(f"Already processed message {uid} so skipping")
+            return None
         """Process a message incoming to this mailbox."""
         msg = self._process_message(message)
         if msg is None:
