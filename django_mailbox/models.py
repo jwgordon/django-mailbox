@@ -19,6 +19,7 @@ import uuid
 from tempfile import NamedTemporaryFile
 
 import django
+from django.db.models import Max
 from django.conf import settings as django_settings
 from django.core.files.base import ContentFile, File
 from django.core.mail.message import make_msgid
