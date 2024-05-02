@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class ImapTransport(EmailTransport):
     def __init__(
         self, hostname, port=None, ssl=False, tls=False,
-        archive='', folder=None, pull_days=1,
+        archive='', folder=None
     ):
         self.max_message_size = getattr(
             settings,
@@ -31,7 +31,6 @@ class ImapTransport(EmailTransport):
         self.archive = archive
         self.folder = folder
         self.tls = tls
-        self.pull_days = pull_days
         if ssl:
             self.transport = imaplib.IMAP4_SSL
             if not self.port:
@@ -60,10 +59,15 @@ class ImapTransport(EmailTransport):
             logger.warning(f'Failed to close IMAP connection, ignoring: {e}')
             pass
 
-    def _get_all_message_ids(self):
+    def _get_all_message_ids(self, last_known_uid=None, pull_days=None):
         # Fetch all the message uids
-        since_date = (datetime.now() - timedelta(days=self.pull_days)).strftime("%d-%b-%Y")
-        response, message_ids = self.server.uid('search', None, 'SINCE', since_date)
+        response, message_ids = None, None
+        if last_known_uid:
+            response, message_ids = self.server.uid('search', None, 'UID',  f'{last_known_uid}:*')
+        elif pull_days:
+            response, message_ids = self.server.uid('search', None, 'SINCE', since_date)
+        else:
+            raise Exception("Need to have a latest message or else specify days")
         message_id_string = message_ids[0].strip()
         # Usually `message_id_string` will be a list of space-separated
         # ids; we must make sure that it isn't an empty string before
@@ -98,8 +102,9 @@ class ImapTransport(EmailTransport):
                 pass
         return safe_message_ids
 
-    def get_message(self, condition=None):
-        message_ids = self._get_all_message_ids()
+    def get_message(self, condition=None, last_known_uid=None, pull_days=None):
+        print(f"Pulling mail with uid higher than {last_known_uid} or else in the last {pull_days} days")
+        message_ids = self._get_all_message_ids(last_known_uid=last_known_uid, pull_days=pull_days)
         print(f"Got {len(message_ids)} message_ids: {message_ids}")
 
         if not message_ids:
@@ -132,7 +137,7 @@ class ImapTransport(EmailTransport):
                 if condition and not condition(message):
                     continue
 
-                yield message
+                yield uid, message
             except MessageParseError:
                 continue
 

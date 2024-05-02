@@ -36,11 +36,11 @@ logger = logging.getLogger(__name__)
 
 
 class MailboxQuerySet(models.QuerySet):
-    def get_new_mail(self):
+    def get_new_mail(self, pull_days=None):
         count = 0
         for mailbox in self.all():
             logger.debug('Receiving mail for %s' % mailbox)
-            count += sum(1 for i in mailbox.get_new_mail())
+            count += sum(1 for i in mailbox.get_new_mail(pull_days=pull_days))
         logger.debug('Received %d %s.', count, 'mail(s)')
 
 
@@ -273,7 +273,9 @@ class Mailbox(models.Model):
             conn = MMDFTransport(self.location)
         return conn
 
-    def process_incoming_message(self, message):
+    def process_incoming_message(self, message,  uid):
+        if Messsage.objects.filter(mailbox=self, imap_uid=uid).exists():
+            print(f"Already processed message {uid} so skipping")
         """Process a message incoming to this mailbox."""
         msg = self._process_message(message)
         if msg is None:
@@ -286,6 +288,7 @@ class Mailbox(models.Model):
         return msg
 
     def record_outgoing_message(self, message):
+        raise Exception("Now sure how this would work with UIDs")
         """Record an outgoing message associated with this mailbox."""
         msg = self._process_message(message)
         if msg is None:
@@ -466,15 +469,17 @@ class Mailbox(models.Model):
                 save=False
             )
 
-    def get_new_mail(self, condition=None):
+    def get_new_mail(self, condition=None, pull_days=None):
         """Connect to this transport and fetch new messages."""
         connection = self.get_connection()
         if not connection:
             return
-        current_highest_uid = self.messages.aggregate.aggregate(Max('uid'))['uid__max']
+        current_highest_uid = None
+        if not pull_days:
+            current_highest_uid = self.messages.aggregate(Max('imap_uid'))['imap_uid__max']
         try:
-            for message in connection.get_message(condition):
-                msg = self.process_incoming_message(message)
+            for uid, message in connection.get_message(condition, last_known_uid=current_highest_uid, pull_days=pull_days):
+                msg = self.process_incoming_message(message, uid)
                 if msg is not None:
                     yield msg
             self.last_polling = now()
@@ -486,7 +491,7 @@ class Mailbox(models.Model):
             connection.close()
 
     @staticmethod
-    def get_new_mail_all_mailboxes(args=None):
+    def get_new_mail_all_mailboxes(args=None, pull_days=None):
         mailboxes = Mailbox.active_mailboxes.all()
         if args:
             mailboxes = mailboxes.filter(
@@ -497,7 +502,7 @@ class Mailbox(models.Model):
                 'Gathering messages for %s',
                 mailbox.name
             )
-            messages = mailbox.get_new_mail()
+            messages = mailbox.get_new_mail(pull_days=pull_days)
             for message in messages:
                 logger.info(
                     'Received %s (from %s)',
@@ -662,6 +667,7 @@ class Message(models.Model):
         pre-set it.
 
         """
+        raise Exception("Idk how this will play with imap ids")
         if not message.from_email:
             if self.mailbox.from_email:
                 message.from_email = self.mailbox.from_email
