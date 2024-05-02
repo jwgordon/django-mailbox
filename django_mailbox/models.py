@@ -275,6 +275,8 @@ class Mailbox(models.Model):
         return conn
 
     def process_incoming_message(self, message,  uid):
+        if not uid:
+            raise Exception("No UID provided for message")
         if Message.objects.filter(mailbox=self, imap_uid=uid).exists():
             print(f"Already processed message {uid} so skipping")
         """Process a message incoming to this mailbox."""
@@ -477,9 +479,13 @@ class Mailbox(models.Model):
         if not connection:
             return
         current_highest_uid = None
-        if not pull_days:
-            current_highest_uid = self.messages.aggregate(Max('imap_uid'))['imap_uid__max']
         try:
+            # If we didn't specify a number of days, try to use highest UI
+            if not pull_days:
+                if not self.messages.count():
+                    print(f"Skipping mailbox {self} because there is no previous UID to start from")
+                    return
+                current_highest_uid = self.messages.aggregate(Max('imap_uid'))['imap_uid__max']
             for uid, message in connection.get_message(condition, last_known_uid=current_highest_uid, pull_days=pull_days):
                 msg = self.process_incoming_message(message, uid)
                 if msg is not None:
