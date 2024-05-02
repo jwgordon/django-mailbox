@@ -275,7 +275,7 @@ class Mailbox(models.Model):
         return conn
 
     def process_incoming_message(self, message,  uid):
-        if Messsage.objects.filter(mailbox=self, imap_uid=uid).exists():
+        if Message.objects.filter(mailbox=self, imap_uid=uid).exists():
             print(f"Already processed message {uid} so skipping")
         """Process a message incoming to this mailbox."""
         msg = self._process_message(message)
