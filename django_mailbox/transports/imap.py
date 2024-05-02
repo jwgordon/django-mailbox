@@ -63,7 +63,6 @@ class ImapTransport(EmailTransport):
     def _get_all_message_ids(self):
         # Fetch all the message uids
         since_date = (datetime.now() - timedelta(days=self.pull_days)).strftime("%d-%b-%Y")
-        print(f"SINCE: {since_date}")
         response, message_ids = self.server.uid('search', None, 'SINCE', since_date)
         message_id_string = message_ids[0].strip()
         # Usually `message_id_string` will be a list of space-separated
